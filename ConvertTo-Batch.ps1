@@ -27,6 +27,30 @@ Param (
 
 [string] $encodedCommand = [convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($Command))
 
+
+<# Enhancement - long PowerShell commands don't look good in the REM area, parse them up
+
+[int] $charsPerLine = 74
+for ($i = 0; $i -lt [math]::Ceiling($Command.Length / $charsPerLine); $i++) {
+  [int] $start = $i * $charsPerLine
+  [int] $end = [math]::Min($charsPerLine, $Command.Length - $start - 1)
+  # Write-Host "Start: $start; End: $end"
+  if ($end) {
+    if ($end -lt $charsPerLine) {
+      $pad = ' ' * ($charsPerLine - $end)
+      "REM - [ $($Command.Substring($start, $end) + $pad) ]"
+    }
+    else {
+      "REM - [ $($Command.Substring($start, $end)) ]"
+    }
+  }
+} 
+
+
+#>
+
+
+
 $batchTemplate = @"
 @ECHO OFF
 SETLOCAL
