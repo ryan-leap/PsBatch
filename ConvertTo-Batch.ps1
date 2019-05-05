@@ -1,11 +1,24 @@
+function ConvertTo-Batch {
 <#
 .SYNOPSIS
-  Creates a batch file with an embedded PowerShell command
+  Converts a PowerShell command (in the form of a string) to a batch-formatted string.
 .DESCRIPTION
-  Script creates a batch file which when executed will run a PowerShell encoded command.  This utility is meant
-  to simplify adding PowerShell commands to a batch file
+  Takes a PowerShell command(s), Base64 encodes it, and embeds it into a batch (Windows batch file) template.
+  This utility is meant to simplify calling PowerShell commands from within a batch file.
 .PARAMETER Command
-  Specifies the date of interest.  Defaults to the current date.
+  Specifies PowerShell command(s) that will be encoded and embedded into a batch file.
+.PARAMETER BatchEnvVarName
+  Specifies an environment variable (to embed within the batch file) to assign to the output of the 
+  PowerShell command(s).
+.PARAMETER CharsPerBatchLine
+  Specifies a limit to the number of characters to place per comment line of the resultant batch file.
+  This is just for formatting purposes.
+.EXAMPLE
+  '(Get-Date).DayOfWeek' | ConvertTo-Batch | Out-File -FilePath '.\day_of_week.bat' -Encoding ascii
+  Produces a batch file which will output the day of the week
+.EXAMPLE
+  '(Get-Date).DayOfWeek' | ConvertTo-Batch -BatchEnvVarName 'DAY_OF_WEEK' | Out-File -FilePath '.\day_of_week.bat' -Encoding ascii
+  Produces a batch file which will assign an environment variable to the day of the week
 .NOTES
    Author: Ryan Leap
    Email: ryan.leap@gmail.com
@@ -15,66 +28,81 @@
 
    IDERA posted a similar script in their PowerTips Blog
    https://community.idera.com/database-tools/powershell/powertips/b/tips/posts/converting-powershell-to-batch
-
 #>
-[CmdletBinding()]
-Param (
+  [CmdletBinding()]
+  Param (
 
-  [Parameter(Mandatory=$true)]
-  [string] $Command
+    [Parameter(Mandatory=$true, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
+    [string] $Command,
 
-)
+    [Parameter(Mandatory=$false)]
+    [string] $BatchEnvVarName,
 
-[string] $encodedCommand = [convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($Command))
+    [ValidateRange(79,160)]
+    [Parameter(Mandatory=$false)]
+    [int] $CharsPerLineInBatchComment = 110
+  )
 
+  [string] $encodedCommand = [convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($Command))
 
-<# Enhancement - long PowerShell commands don't look good in the REM area, parse them up
-
-[int] $charsPerLine = 74
-for ($i = 0; $i -lt [math]::Ceiling($Command.Length / $charsPerLine); $i++) {
-  [int] $start = $i * $charsPerLine
-  [int] $end = [math]::Min($charsPerLine, $Command.Length - $start - 1)
-  # Write-Host "Start: $start; End: $end"
-  if ($end) {
-    if ($end -lt $charsPerLine) {
-      $pad = ' ' * ($charsPerLine - $end)
-      "REM - [ $($Command.Substring($start, $end) + $pad) ]"
-    }
-    else {
-      "REM - [ $($Command.Substring($start, $end)) ]"
+  #
+  # Place the PowerShell code in a line-wrapped comment block within the batch file
+  #
+  [int] $charsPerLineLessRemPrefix = $CharsPerLineInBatchComment - 'REM - '.Length
+  [string] $dashes = '-' * $charsPerLineLessRemPrefix
+  [int] $charsPerLineOfPsCode = $CharsPerLineLessRemPrefix - ' []'.Length
+  [string] $psCodeBatchComment = ''
+  for ($i = 0; $i -lt [math]::Ceiling($Command.Length / $charsPerLineOfPsCode); $i++) {
+    [int] $startIndex = $i * $charsPerLineOfPsCode
+    [int] $length = [math]::Min($charsPerLineOfPsCode, $Command.Length - $startIndex)
+    $psCodeBatchComment += "REM - [$($Command.Substring($startIndex, $length))]"
+    if ($length -eq $charsPerLineOfPsCode) { 
+      $psCodeBatchComment += [System.Environment]::NewLine
     }
   }
-} 
 
+  if ($BatchEnvVarName) {
+    $batchRunSection = @"
+REM -$dashes
+REM -
+REM - Set PowerShell output to Env Var
+REM -
+REM -$dashes
+FOR /F "delims=" %%i in ('%RUN_PS_CMD_ENCODED% "%PS_CMD_ENCODED%"') DO SET $BatchEnvVarName=%%i
+@ECHO %$BatchEnvVarName%
+"@
+  }
+  else {
+    $batchRunSection = @"
+REM -$dashes
+REM -
+REM - Run PowerShell command
+REM -
+REM -$dashes
+%RUN_PS_CMD_ENCODED% "%PS_CMD_ENCODED%"
+"@
+  }
 
-#>
-
-
-
-$batchTemplate = @"
+  $batchTemplate = @"
 @ECHO OFF
 SETLOCAL
-REM --------------------------------------------------------------------------
+
+REM -$dashes
 REM -
-REM -
-REM - Batch file made by [$($MyInvocation.MyCommand.Name)] on [$((Get-Date).ToString())]
+REM - Created by [$($MyInvocation.MyCommand.Name)]
 REM -
 REM - PowerShell command which is encoded:
 REM -
-REM - [$Command]
+$psCodeBatchComment
 REM -
-REM --------------------------------------------------------------------------
-
+REM -$dashes
 SET RUN_PS_CMD_ENCODED=powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand
 SET PS_CMD_ENCODED=$encodedCommand
 
-REM --------------------------------------------------------------------------
-REM - Set an environment variable to the output of the PowerShell Command
-REM --------------------------------------------------------------------------
-FOR /F "delims=" %%i in ('%RUN_PS_CMD_ENCODED% "%PS_CMD_ENCODED%"') DO SET PS_CMD_OUTPUT=%%i
-@ECHO %PS_CMD_OUTPUT%
+$batchRunSection
 
 ENDLOCAL
 "@
 
-$batchTemplate
+  $batchTemplate
+}
