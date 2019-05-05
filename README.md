@@ -20,8 +20,8 @@ Get-Help ConvertTo-Batch
 ```
 
 ## Examples
+### Produces a batch file which will output the day of the week
 ```powershell
-PS C:\> # Produces a batch file which will output the day of the week
 PS C:\> '(Get-Date).DayOfWeek' | ConvertTo-Batch | Out-File -FilePath '.\day_of_week.bat' -Encoding ascii
 PS C:\> Get-Content .\day_of_week.bat
 @ECHO OFF
@@ -48,8 +48,8 @@ REM ----------------------------------------------------------------------------
 
 ENDLOCAL
 ```
+### Produces a batch file which will assign an environment variable to the day of the week
 ```powershell
-PS C:\> # Produces a batch file which will assign an environment variable to the day of the week
 PS C:\> '(Get-Date).DayOfWeek' | ConvertTo-Batch -BatchEnvVarName 'DAY_OF_WEEK' | Out-File -FilePath '.\day_of_week.bat' -Encoding ascii
 PS C:\> Get-Content .\day_of_week.bat
 @ECHO OFF
