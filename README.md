@@ -23,10 +23,59 @@ Get-Help ConvertTo-Batch
 ```powershell
 PS C:\> # Produces a batch file which will output the day of the week
 PS C:\> '(Get-Date).DayOfWeek' | ConvertTo-Batch | Out-File -FilePath '.\day_of_week.bat' -Encoding ascii
+PS C:\> Get-Content .\day_of_week.bat
+@ECHO OFF
+SETLOCAL
+
+REM ---------------------------------------------------------------------------------------------------------
+REM -
+REM - Created by [ConvertTo-Batch]
+REM -
+REM - PowerShell command which is encoded:
+REM -
+REM - [(Get-Date).DayOfWeek]
+REM -
+REM ---------------------------------------------------------------------------------------------------------
+SET RUN_PS_CMD_ENCODED=powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand
+SET PS_CMD_ENCODED=KABHAGUAdAAtAEQAYQB0AGUAKQAuAEQAYQB5AE8AZgBXAGUAZQBrAA==
+
+REM ---------------------------------------------------------------------------------------------------------
+REM -
+REM - Run PowerShell command
+REM -
+REM ---------------------------------------------------------------------------------------------------------
+%RUN_PS_CMD_ENCODED% "%PS_CMD_ENCODED%"
+
+ENDLOCAL
 ```
 ```powershell
 PS C:\> # Produces a batch file which will assign an environment variable to the day of the week
 PS C:\> '(Get-Date).DayOfWeek' | ConvertTo-Batch -BatchEnvVarName 'DAY_OF_WEEK' | Out-File -FilePath '.\day_of_week.bat' -Encoding ascii
+PS C:\> Get-Content .\day_of_week.bat
+@ECHO OFF
+SETLOCAL
+
+REM ---------------------------------------------------------------------------------------------------------
+REM -
+REM - Created by [ConvertTo-Batch]
+REM -
+REM - PowerShell command which is encoded:
+REM -
+REM - [(Get-Date).DayOfWeek]
+REM -
+REM ---------------------------------------------------------------------------------------------------------
+SET RUN_PS_CMD_ENCODED=powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand
+SET PS_CMD_ENCODED=KABHAGUAdAAtAEQAYQB0AGUAKQAuAEQAYQB5AE8AZgBXAGUAZQBrAA==
+
+REM ---------------------------------------------------------------------------------------------------------
+REM -
+REM - Set PowerShell output to Env Var
+REM -
+REM ---------------------------------------------------------------------------------------------------------
+FOR /F "delims=" %%i in ('%RUN_PS_CMD_ENCODED% "%PS_CMD_ENCODED%"') DO SET DAY_OF_WEEK=%%i
+@ECHO %DAY_OF_WEEK%
+
+ENDLOCAL
 ```
 ## Author(s)
 
