@@ -48,14 +48,15 @@ function ConvertTo-Batch {
   #
   # Place the PowerShell code in a line-wrapped comment block within the batch file
   #
+  [string] $commandSansNewLine = $Command.Replace([System.Environment]::NewLine, ' ')
   [int] $charsPerLineLessRemPrefix = $CharsPerLineInBatchComment - 'REM - '.Length
   [string] $dashes = '-' * $charsPerLineLessRemPrefix
   [int] $charsPerLineOfPsCode = $CharsPerLineLessRemPrefix - ' []'.Length
   [string] $psCodeBatchComment = ''
-  for ($i = 0; $i -lt [math]::Ceiling($Command.Length / $charsPerLineOfPsCode); $i++) {
+  for ($i = 0; $i -lt [math]::Ceiling($commandSansNewLine.Length / $charsPerLineOfPsCode); $i++) {
     [int] $startIndex = $i * $charsPerLineOfPsCode
-    [int] $length = [math]::Min($charsPerLineOfPsCode, $Command.Length - $startIndex)
-    $psCodeBatchComment += "REM - [$($Command.Substring($startIndex, $length))]"
+    [int] $length = [math]::Min($charsPerLineOfPsCode, $commandSansNewLine.Length - $startIndex)
+    $psCodeBatchComment += "REM - [$($commandSansNewLine.Substring($startIndex, $length))]"
     if ($length -eq $charsPerLineOfPsCode) { 
       $psCodeBatchComment += [System.Environment]::NewLine
     }
