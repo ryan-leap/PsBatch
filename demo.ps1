@@ -22,7 +22,7 @@ $encodedCommand = [Convert]::ToBase64String($bytes)
 # ConvertTo-Batch Demo
 . .\ConvertTo-Batch.ps1
 ConvertTo-Batch -Command $command | clip
-ConvertTo-Batch -Command $command -BatchEnvVarName MY_TIMESTAMP | clip
+ConvertTo-Batch -Command $command -BatchEnvVarName HOUR_MIN_SEC | clip
 
 
 # Batch is_admin.bat
